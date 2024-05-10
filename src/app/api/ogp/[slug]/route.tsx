@@ -4,6 +4,8 @@ export async function GET(
   _request: Request,
   { params }: { params: { slug: string } }
 ) {
+  const now = Date.now().toString();
+
   return new ImageResponse(
     (
       <div
@@ -11,13 +13,16 @@ export async function GET(
           fontSize: 48,
           background: "white",
           display: "flex",
+          flexDirection: "column",
+          gap: 0,
           justifyContent: "center",
           alignItems: "center",
           width: "100%",
           height: "100%",
         }}
       >
-        {params.slug}
+        <p>{params.slug}</p>
+        <p>{now}</p>
       </div>
     ),
     {
