@@ -1,0 +1,37 @@
+name: Slack Notification on Push
+
+on:
+  repository_dispatch:
+    types:
+      - "vercel.deployment.success"
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.client_payload.git.ref == 'main' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Debug client_payload
+        run: |
+          echo "client_payload: ${{ toJSON(github.event.client_payload) }}"
+
+      - name: Extract Notion URL and get title
+        id: extract-notion-url
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # git SHAからマージされたPRのbodyを取得
+          PR_BODY=$(gh pr list --search "${{ github.event.client_payload.git.sha }}" --state merged --json body --jq '.[0].body // ""')
+
+          # スクリプトを実行してNotionのURLとタイトルを取得
+          OUTPUT=$(./scripts/extract_notion_url_and_title.sh "$PR_BODY" '${{ secrets.NOTION_API_TOKEN }}')
+
+          # 出力をGitHub Outputに追加
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+
+      - name: Send Slack notification
+        run: |
+          echo "以下のタスクに関連するリリースが完了しました！\n\n*${{ steps.extract-notion-url.outputs.notion_title }}*\n${{ steps.extract-notion-url.outputs.notion_url }}"
